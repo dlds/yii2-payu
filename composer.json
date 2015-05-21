@@ -1,0 +1,33 @@
+{
+    "name": "dlds/yii2-payu",
+    "description": "Yii2 PayU gateway integration",
+    "keywords": ["yii2", "payu", "integration"],
+    "type": "yii2-extension",
+    "license": "BSD",
+    "support": {
+        "issues": "https://github.com/dlds/yii2-payu/issues",
+        "wiki": "https://github.com/dlds/yii2-payu/wiki",
+        "source": "https://github.com/dlds/yii2-payu"
+    },
+    "authors": [
+        {
+            "name": "Jiri Svoboda",
+            "email": "jiri.svoboda@dlds.cz"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "require-dev": {
+        "yiisoft/yii2-codeception": "*",
+        "yiisoft/yii2-debug": "*",
+        "yiisoft/yii2-faker": "*",
+        "codeception/specify": "*",
+        "codeception/verify": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "dlds\\payu\\": "src"
+        }
+    }
+}
