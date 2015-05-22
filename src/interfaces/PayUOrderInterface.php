@@ -7,56 +7,50 @@
 
 namespace dlds\payu\interfaces;
 
+use dlds\payu\interfaces\PayUOrderSourceInterface;
+
 /**
  * Interface which should be ingerited by any model which would be used as
  * source model for creating PayU order
  */
 interface PayUOrderInterface {
 
-
+    /**
+     * Retrieves order sessions id which is unique identification of order
+     * @return string session id
+     */
     public function getSessionId();
 
-    public function getOrderId();
+    /**
+     * Retrieves source model this order was created based on
+     * @return PayUOrderSourceInterface
+     */
+    public function getSource();
 
-    public function getOrderAmount();
+    /**
+     * Retrieves order status
+     * @return int status
+     */
+    public function getStatus();
 
-    public function getOrderDesc();
+    /**
+     * Retrieves order payment type
+     * @return string payment type
+     */
+    public function getPaymentType();
 
-    public function getOrderPaymentType();
+    /**
+     * Sets source based on this order is created
+     */
+    public function setSource(PayUOrderSourceInterface $source);
 
-    public function getOrderCustomerFirstName();
+    /**
+     * Sets order status
+     */
+    public function setStatus($status);
 
-    public function getOrderCustomerLastName();
-
-    public function getOrderCustomerEmail();
-
-    public function getOrderCustomerLanguage();
-
-    public function getOrderCustomerIP();
-
-    public function getOrderSig();
-
-    public function getOrderTs();
-
-    public function setOrderId();
-
-    public function setOrderAmount();
-
-    public function setOrderDesc();
-
-    public function setOrderPaymentType();
-
-    public function setOrderCustomerFirstName();
-
-    public function setOrderCustomerLastName();
-
-    public function setOrderCustomerEmail();
-
-    public function setOrderCustomerLanguage();
-
-    public function setOrderCustomerIP();
-
-    public function setOrderSig();
-
-    public function setOrderTs();
+    /**
+     * Sets order payment type
+     */
+    public function setType($type);
 }

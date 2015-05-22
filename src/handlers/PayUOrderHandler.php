@@ -25,6 +25,13 @@ class PayUOrderHandler {
      */
     public static function createFromSource(PayUOrderSourceInterface $source, PayUOrderInterface $template)
     {
-        
+        $template->setSource($source);
+
+        if ($template->save())
+        {
+            return $template;
+        }
+
+        return false;
     }
 }

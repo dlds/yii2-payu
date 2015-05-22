@@ -13,25 +13,57 @@ namespace dlds\payu\interfaces;
  */
 interface PayUOrderSourceInterface {
 
+    /**
+     * Retrieves order id
+     * @return int identification
+     */
     public function getOrderId();
 
+    /**
+     * Retrieves order amount
+     * @return float order amount
+     */
     public function getOrderAmount();
 
+    /**
+     * Retrieves order desc
+     * @return string description
+     */
     public function getOrderDesc();
 
-    public function getOrderPaymentType();
-
+    /**
+     * Retrieves order assigned customer's first name
+     * @return string customer first name
+     */
     public function getOrderCustomerFirstName();
 
+    /**
+     * Retrieves order assigne customer's last name
+     * @return string customer last name
+     */
     public function getOrderCustomerLastName();
 
+    /**
+     * Retrieves order assigned customer's email
+     * @return string customer email
+     */
     public function getOrderCustomerEmail();
 
+    /**
+     * Retrieves order assigned customer's preffered language
+     * @return string customer language
+     */
     public function getOrderCustomerLanguage();
 
+    /**
+     * Retrieves order assigne customer's IP
+     * @return string customer IP
+     */
     public function getOrderCustomerIP();
 
-    public function getOrderSig();
-
+    /**
+     * Retrieves order ts
+     * @return string random string
+     */
     public function getOrderTs();
 }

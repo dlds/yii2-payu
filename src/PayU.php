@@ -7,8 +7,8 @@
 
 namespace dlds\payu;
 
-use dlds\payu\PayUOrderSourceInterface;
-use dlds\payu\PayUOrderInterface;
+use dlds\payu\interfaces\PayUOrderSourceInterface;
+use dlds\payu\interfaces\PayUOrderInterface;
 
 /**
  * This is the main class of the dlds\payu component
@@ -36,9 +36,9 @@ class PayU extends \yii\base\Component {
      * Payment types
      */
     const PAYMENT_TYPE_CS = 'cs';
-    const PAYMENT_TYPE_MBANK = 'mp';
+    const PAYMENT_TYPE_MB = 'mp';
     const PAYMENT_TYPE_KB = 'kb';
-    const PAYMENT_TYPE_RF = 'rf';
+    const PAYMENT_TYPE_RB = 'rf';
     const PAYMENT_TYPE_GE = 'pg';
     const PAYMENT_TYPE_SB = 'pv';
     const PAYMENT_TYPE_FIO = 'pf';
@@ -62,6 +62,16 @@ class PayU extends \yii\base\Component {
     public $posAuthKey;
 
     /**
+     * @var string key for point of sale
+     */
+    public $key;
+
+    /**
+     * @var string gateway url
+     */
+    public $urlTmpl;
+
+    /**
      * Inits module
      */
     public function init()
@@ -75,6 +85,16 @@ class PayU extends \yii\base\Component {
         {
             throw new \yii\base\Exception('PosAuthKey parameter is not set');
         }
+
+        if (!$this->key)
+        {
+            throw new \yii\base\Exception('Key2 parameter is not set');
+        }
+
+        if (!$this->urlTmpl)
+        {
+            throw new \yii\base\Exception('Url parameter is not set');
+        }
     }
 
     /**
@@ -82,18 +102,88 @@ class PayU extends \yii\base\Component {
      */
     public function createOrder(PayUOrderSourceInterface $source, PayUOrderInterface $template)
     {
-        $order = handlers\PayUOrderHandler::createFromSource($source, $template);
+        return handlers\PayUOrderHandler::createFromSource($source, $template);
+    }
 
-        /*
-          if ($order)
-          {
-          $handler = handlers\PayUApiHandler::instance($this->posId, $this->posAuthKey);
+    /**
+     * Retrieves payment status
+     * @param PayUOrderInterface $order
+     */
+    public function getPaymentStatus(PayUOrderInterface $order)
+    {
+        $handler = handlers\PayUApiHandler::instance($this->posId, $this->posAuthKey, $this->urlTmpl);
 
-          return $handler->createOrder($template);
-          }
-         *
-         */
+        return $handler->getPaymentStatus($order, $this->key);
+    }
 
-        return $order;
+    /**
+     * Generates required form body for new payment
+     * @param PayUOrderInterface $order
+     */
+    public function getPaymentFormFields(PayUOrderInterface $order)
+    {
+        $handler = handlers\PayUApiHandler::instance($this->posId, $this->posAuthKey, $this->urlTmpl);
+
+        return $handler->getPaymentFields($order, $this->key);
+    }
+
+    /**
+     * Retrieves PayU gateway url
+     * @return string url
+     */
+    public function getGatewayUrl($action = handlers\PayUApiHandler::ACTION_NEW_PAYMENT)
+    {
+        $handler = handlers\PayUApiHandler::instance($this->posId, $this->posAuthKey, $this->urlTmpl);
+
+        return $handler->getGatewayUrl($action);
+    }
+
+    /**
+     * Retrieves all possible payment statuses
+     * @return array payment statuses
+     */
+    public static function paymentStatuses()
+    {
+        return [
+            self::PAYMENT_STATUS_NEW => \Yii::t('dlds/payu', 'text_payment_status_new'),
+            self::PAYMENT_STATUS_CANCELLED => \Yii::t('dlds/payu', 'text_payment_status_cancelled'),
+            self::PAYMENT_STATUS_REJECTED => \Yii::t('dlds/payu', 'text_payment_status_rejected'),
+            self::PAYMENT_STATUS_STARTED => \Yii::t('dlds/payu', 'text_payment_status_started'),
+            self::PAYMENT_STATUS_AWAITING => \Yii::t('dlds/payu', 'text_payment_status_awaiting'),
+            self::PAYMENT_STATUS_RETRIEVED => \Yii::t('dlds/payu', 'text_payment_status_retrieved'),
+            self::PAYMENT_STATUS_ENDED => \Yii::t('dlds/payu', 'text_payment_status_ended'),
+            self::PAYMENT_STATUS_UNKNOWN => \Yii::t('dlds/payu', 'text_payment_status_unknown'),
+        ];
+    }
+
+    /**
+     * Retrieves all possible payment types
+     * @return array payment types
+     */
+    public static function paymentTypes()
+    {
+        $types = [
+            self::PAYMENT_TYPE_CS => \Yii::t('dlds/payu', 'text_payment_method_cs'),
+            self::PAYMENT_TYPE_MB => \Yii::t('dlds/payu', 'text_payment_method_mb'),
+            self::PAYMENT_TYPE_KB => \Yii::t('dlds/payu', 'text_payment_method_kb'),
+            self::PAYMENT_TYPE_RB => \Yii::t('dlds/payu', 'text_payment_method_rb'),
+            self::PAYMENT_TYPE_GE => \Yii::t('dlds/payu', 'text_payment_method_ge'),
+            self::PAYMENT_TYPE_SB => \Yii::t('dlds/payu', 'text_payment_method_sb'),
+            self::PAYMENT_TYPE_FIO => \Yii::t('dlds/payu', 'text_payment_method_fio'),
+            self::PAYMENT_TYPE_ERA => \Yii::t('dlds/payu', 'text_payment_method_era'),
+            self::PAYMENT_TYPE_CSOB => \Yii::t('dlds/payu', 'text_payment_method_csob'),
+            self::PAYMENT_TYPE_PAYSEC => \Yii::t('dlds/payu', 'text_payment_method_paysec'),
+            self::PAYMENT_TYPE_GPE => \Yii::t('dlds/payu', 'text_payment_method_gpe'),
+            self::PAYMENT_TYPE_MOBITO => \Yii::t('dlds/payu', 'text_payment_method_mobito'),
+            self::PAYMENT_TYPE_BANKWIRE => \Yii::t('dlds/payu', 'text_payment_method_bankwire'),
+            self::PAYMENT_TYPE_POST => \Yii::t('dlds/payu', 'text_payment_method_post'),
+        ];
+
+        if (!YII_ENV_PROD)
+        {
+            $types[self::PAYMENT_TYPE_TEST] = \Yii::t('dlds/payu', 'text_payment_method_test');
+        }
+
+        return $types;
     }
 }
