@@ -36,9 +36,9 @@ class PayU extends \yii\base\Component {
      * Payment types
      */
     const PAYMENT_TYPE_CS = 'cs';
-    const PAYMENT_TYPE_MB = 'mp';
     const PAYMENT_TYPE_KB = 'kb';
     const PAYMENT_TYPE_RB = 'rf';
+    const PAYMENT_TYPE_MB = 'mp';
     const PAYMENT_TYPE_GE = 'pg';
     const PAYMENT_TYPE_SB = 'pv';
     const PAYMENT_TYPE_FIO = 'pf';
@@ -52,6 +52,15 @@ class PayU extends \yii\base\Component {
     const PAYMENT_TYPE_TEST = 't';
 
     /**
+     * Payment types groups
+     */
+    const PAYMENT_GROUP_ALL = 0;
+    const PAYMENT_GROUP_CREDIT_CARD = 10;
+    const PAYMENT_GROUP_BANK_ONLINE = 20;
+    const PAYMENT_GROUP_BANKWIRE = 30;
+    const PAYMENT_GROUP_OTHERS = 40;
+
+    /**
      * @var int ID of PayU point of sale
      */
     public $posId;
@@ -62,9 +71,14 @@ class PayU extends \yii\base\Component {
     public $posAuthKey;
 
     /**
-     * @var string key for point of sale
+     * @var string key1 for point of sale
      */
-    public $key;
+    public $key1;
+
+    /**
+     * @var string key2 for point of sale
+     */
+    public $key2;
 
     /**
      * @var string gateway url
@@ -86,7 +100,12 @@ class PayU extends \yii\base\Component {
             throw new \yii\base\Exception('PosAuthKey parameter is not set');
         }
 
-        if (!$this->key)
+        if (!$this->key1)
+        {
+            throw new \yii\base\Exception('Key1 parameter is not set');
+        }
+
+        if (!$this->key2)
         {
             throw new \yii\base\Exception('Key2 parameter is not set');
         }
@@ -113,7 +132,7 @@ class PayU extends \yii\base\Component {
     {
         $handler = handlers\PayUApiHandler::instance($this->posId, $this->posAuthKey, $this->urlTmpl);
 
-        return $handler->getPaymentStatus($order, $this->key);
+        return $handler->getPaymentStatus($order, $this->key1, $this->key2);
     }
 
     /**
@@ -124,7 +143,7 @@ class PayU extends \yii\base\Component {
     {
         $handler = handlers\PayUApiHandler::instance($this->posId, $this->posAuthKey, $this->urlTmpl);
 
-        return $handler->getPaymentFields($order, $this->key);
+        return $handler->getNewPaymentFields($order, $this->key1);
     }
 
     /**
@@ -160,28 +179,57 @@ class PayU extends \yii\base\Component {
      * Retrieves all possible payment types
      * @return array payment types
      */
-    public static function paymentTypes()
+    public static function paymentTypes($group = self::PAYMENT_GROUP_ALL, $allowGroups = true)
     {
-        $types = [
+        $types[self::PAYMENT_GROUP_BANK_ONLINE] = [
             self::PAYMENT_TYPE_CS => \Yii::t('dlds/payu', 'text_payment_method_cs'),
-            self::PAYMENT_TYPE_MB => \Yii::t('dlds/payu', 'text_payment_method_mb'),
             self::PAYMENT_TYPE_KB => \Yii::t('dlds/payu', 'text_payment_method_kb'),
             self::PAYMENT_TYPE_RB => \Yii::t('dlds/payu', 'text_payment_method_rb'),
-            self::PAYMENT_TYPE_GE => \Yii::t('dlds/payu', 'text_payment_method_ge'),
-            self::PAYMENT_TYPE_SB => \Yii::t('dlds/payu', 'text_payment_method_sb'),
+            self::PAYMENT_TYPE_MB => \Yii::t('dlds/payu', 'text_payment_method_mb'),
             self::PAYMENT_TYPE_FIO => \Yii::t('dlds/payu', 'text_payment_method_fio'),
-            self::PAYMENT_TYPE_ERA => \Yii::t('dlds/payu', 'text_payment_method_era'),
             self::PAYMENT_TYPE_CSOB => \Yii::t('dlds/payu', 'text_payment_method_csob'),
-            self::PAYMENT_TYPE_PAYSEC => \Yii::t('dlds/payu', 'text_payment_method_paysec'),
+            self::PAYMENT_TYPE_GE => \Yii::t('dlds/payu', 'text_payment_method_ge'),
+            self::PAYMENT_TYPE_ERA => \Yii::t('dlds/payu', 'text_payment_method_era'),
+            self::PAYMENT_TYPE_SB => \Yii::t('dlds/payu', 'text_payment_method_sb'),
+        ];
+
+        $types[self::PAYMENT_GROUP_CREDIT_CARD] = [
             self::PAYMENT_TYPE_GPE => \Yii::t('dlds/payu', 'text_payment_method_gpe'),
-            self::PAYMENT_TYPE_MOBITO => \Yii::t('dlds/payu', 'text_payment_method_mobito'),
+        ];
+
+        $types[self::PAYMENT_GROUP_BANKWIRE] = [
             self::PAYMENT_TYPE_BANKWIRE => \Yii::t('dlds/payu', 'text_payment_method_bankwire'),
+        ];
+
+        $types[self::PAYMENT_GROUP_OTHERS] = [
+            self::PAYMENT_TYPE_PAYSEC => \Yii::t('dlds/payu', 'text_payment_method_paysec'),
+            self::PAYMENT_TYPE_MOBITO => \Yii::t('dlds/payu', 'text_payment_method_mobito'),
             self::PAYMENT_TYPE_POST => \Yii::t('dlds/payu', 'text_payment_method_post'),
         ];
 
         if (!YII_ENV_PROD)
         {
-            $types[self::PAYMENT_TYPE_TEST] = \Yii::t('dlds/payu', 'text_payment_method_test');
+            $types[self::PAYMENT_GROUP_OTHERS][self::PAYMENT_TYPE_TEST] = \Yii::t('dlds/payu', 'text_payment_method_test');
+        }
+
+        if (isset($types[$group]))
+        {
+            return $types[$group];
+        }
+
+        if (!$allowGroups)
+        {
+            $merged = [];
+
+            foreach ($types as $payments)
+            {
+                foreach ($payments as $key => $label)
+                {
+                    $merged[$key] = $label;
+                }
+            }
+
+            return $merged;
         }
 
         return $types;

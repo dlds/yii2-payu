@@ -23,6 +23,7 @@ class PayUApiHandler {
      * Actions
      */
     const ACTION_NEW_PAYMENT = 'NewPayment';
+    const ACTION_GET_SATUS = 'Payment/get/xml';
 
     /**
      * @var string given POS ID
@@ -38,7 +39,7 @@ class PayUApiHandler {
      * @var string given url tmpl
      */
     protected $urlTmpl;
-    
+
     /**
      * @var PayUApiHandler instance
      */
@@ -86,20 +87,29 @@ class PayUApiHandler {
      * Retrieves required form body fields to create new payment request
      * @param PayUOrderInterface $order
      */
-    public function getPaymentstatus(PayUOrderInterface $order, $key)
+    public function getPaymentstatus(PayUOrderInterface $order, $key1, $key2)
     {
-        die('ee');
+        $response = $this->processPaymentStatusRequest($order, $key1);
+
+        $xml = simplexml_load_string($response);
+
+        if ($xml && $this->verifyResponse($xml, $key2))
+        {
+            return (int) $xml->trans->status;
+        }
+
+        return false;
     }
 
     /**
      * Retrieves required form body fields to create new payment request
      * @param PayUOrderInterface $order
      */
-    public function getPaymentFields(PayUOrderInterface $order, $key)
+    public function getNewPaymentFields(PayUOrderInterface $order, $key1)
     {
         $fields = [];
 
-        foreach (self::generatePaymentFields($order, $key) as $name => $value)
+        foreach ($this->generateNewPaymentFields($order, $key1) as $name => $value)
         {
             $fields[] = Html::hiddenInput($name, $value);
         }
@@ -110,9 +120,9 @@ class PayUApiHandler {
     /**
      * Retrieves all required field for new payment
      * @param PayUOrderInterface $order
-     * @param string $key private PayU key
+     * @param string $key1 private PayU key
      */
-    protected function generatePaymentFields(PayUOrderInterface $order, $key)
+    protected function generateNewPaymentFields(PayUOrderInterface $order, $key1)
     {
         if (!$order->getSource())
         {
@@ -145,10 +155,63 @@ class PayUApiHandler {
             'ts' => $order->getSource()->getOrderTs(),
         ];
 
-        $sig = md5(implode('', $data).$key);
+        $sig = md5(implode('', $data).$key1);
 
         $data['sig'] = $sig;
 
         return $data;
+    }
+
+    /**
+     * Processes payment status request
+     * @param PayUOrderInterface $order
+     * @param string $key1
+     */
+    protected function processPaymentStatusRequest(PayUOrderInterface $order, $key1)
+    {
+        $ts = time();
+
+        $parameters = [
+            'pos_id' => $this->posId,
+            'session_id' => $order->getSessionId(),
+            'ts' => $ts,
+        ];
+
+        $sig = md5(implode('', $parameters).$key1);
+
+        $parameters['sig'] = $sig;
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $this->getGatewayUrl(self::ACTION_GET_SATUS));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($parameters));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        $payu_response = curl_exec($ch);
+        curl_close($ch);
+
+        return $payu_response;
+    }
+
+    /**
+     * verifies PayU response
+     * @param \dlds\payu\handlers\SimpleXMLElement $xml
+     */
+    protected function verifyResponse(\SimpleXMLElement $xml, $key2)
+    {
+        $sig = md5(implode('', [
+            $this->posId,
+            $xml->trans->session_id,
+            $xml->trans->order_id,
+            $xml->trans->status,
+            $xml->trans->amount,
+            $xml->trans->desc,
+            $xml->trans->ts,
+            $key2,
+        ]));
+
+        return $sig === (string) $xml->trans->sig;
     }
 }
