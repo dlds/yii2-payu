@@ -89,15 +89,20 @@ class PayUApiHandler {
      */
     public function getPaymentstatus(PayUOrderInterface $order, $key1, $key2)
     {
+        // process payment status request to gateway
         $response = $this->processPaymentStatusRequest($order, $key1);
 
+        // parses XML response using simple xml
         $xml = simplexml_load_string($response);
 
+        // verifies if response is valid
         if ($xml && $this->verifyResponse($xml, $key2))
         {
+            // retrieves status as integer value
             return (int) $xml->trans->status;
         }
 
+        // retrieves false if response was unsuccessful
         return false;
     }
 
@@ -124,6 +129,7 @@ class PayUApiHandler {
      */
     protected function generateNewPaymentFields(PayUOrderInterface $order, $key1)
     {
+        // if order has no source retrieves empty array
         if (!$order->getSource())
         {
             return [];
@@ -155,9 +161,8 @@ class PayUApiHandler {
             'ts' => $order->getSource()->getOrderTs(),
         ];
 
-        $sig = md5(implode('', $data).$key1);
-
-        $data['sig'] = $sig;
+        // generate SIG hash
+        $data['sig'] = md5(implode('', $data).$key1);
 
         return $data;
     }
@@ -169,18 +174,26 @@ class PayUApiHandler {
      */
     protected function processPaymentStatusRequest(PayUOrderInterface $order, $key1)
     {
-        $ts = time();
+        // return false if order has no source
+        if (!$order->getSource())
+        {
+            return false;
+        }
 
+        // use order source TS value as request TS
+        $ts = $order->getSource()->getOrderTs();
+
+        // set required parameters for request
         $parameters = [
             'pos_id' => $this->posId,
             'session_id' => $order->getSessionId(),
             'ts' => $ts,
         ];
 
-        $sig = md5(implode('', $parameters).$key1);
+        // generate SIG hash
+        $parameters['sig'] = md5(implode('', $parameters).$key1);
 
-        $parameters['sig'] = $sig;
-
+        // create request using cURL
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->getGatewayUrl(self::ACTION_GET_SATUS));
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
@@ -189,6 +202,7 @@ class PayUApiHandler {
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($parameters));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
         $payu_response = curl_exec($ch);
         curl_close($ch);
 
@@ -196,11 +210,12 @@ class PayUApiHandler {
     }
 
     /**
-     * verifies PayU response
+     * Verifies PayU response
      * @param \dlds\payu\handlers\SimpleXMLElement $xml
      */
     protected function verifyResponse(\SimpleXMLElement $xml, $key2)
     {
+        // generate expected SIG string
         $sig = md5(implode('', [
             $this->posId,
             $xml->trans->session_id,
@@ -212,6 +227,7 @@ class PayUApiHandler {
             $key2,
         ]));
 
+        // check if generated SIG is same as recieved SIG
         return $sig === (string) $xml->trans->sig;
     }
 }
