@@ -135,6 +135,8 @@ class PayUApiHandler {
             return [];
         }
 
+        $amount = (YII_ENV_PROD) ? $order->getSource()->getOrderAmount() * 100 : $order->getSource()->getOrderAmount();
+
         // array values must be in this order otherwise SIG hash would be denied
         $data = [
             'pos_id' => $this->posId,
@@ -142,7 +144,7 @@ class PayUApiHandler {
             'session_id' => $order->getSessionId(),
             'pos_auth_key' => $this->posAuthKey,
             //'amount' => $order->getSource()->getOrderAmount() * 100,
-            'amount' => $order->getSource()->getOrderAmount(),
+            'amount' => $amount,
             'desc' => $order->getSource()->getOrderDesc(),
             'order_id' => $order->getSource()->getOrderId(),
             'first_name' => $order->getSource()->getOrderCustomerFirstName(),
