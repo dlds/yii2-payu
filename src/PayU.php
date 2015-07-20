@@ -31,6 +31,7 @@ class PayU extends \yii\base\Component {
     const PAYMENT_STATUS_RETRIEVED = 7;
     const PAYMENT_STATUS_ENDED = 99;
     const PAYMENT_STATUS_UNKNOWN = 888;
+    const PAYMENT_STATUS_ERROR = 900;
 
     /**
      * Payment types
@@ -172,6 +173,7 @@ class PayU extends \yii\base\Component {
             self::PAYMENT_STATUS_RETRIEVED => \Yii::t('dlds/payu', 'text_payment_status_retrieved'),
             self::PAYMENT_STATUS_ENDED => \Yii::t('dlds/payu', 'text_payment_status_ended'),
             self::PAYMENT_STATUS_UNKNOWN => \Yii::t('dlds/payu', 'text_payment_status_unknown'),
+            self::PAYMENT_STATUS_ERROR => \Yii::t('dlds/payu', 'text_payment_status_error'),
         ];
     }
 
