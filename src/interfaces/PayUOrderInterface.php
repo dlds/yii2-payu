@@ -53,4 +53,10 @@ interface PayUOrderInterface {
      * Sets order payment type
      */
     public function setType($type);
+
+    /**
+     * Indicates if payment state is invariant
+     * @return boolean
+     */
+    public function isInvariable();
 }
